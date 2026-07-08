@@ -7,7 +7,7 @@ A FastAPI backend service powered by Gemini 2.5 Flash and Qdrant. It generates p
 
 1. **API Layer (FastAPI):** Handles input validation using Pydantic (including complex `model_validator` edge cases for dual-input paths).
 2. **LLM Service (Google GenAI):** Uses `google-genai` SDK for native structured output (avoiding gRPC hangs common in older SDKs). Includes a retry-with-feedback mechanism.
-3. **RAG Service (Qdrant `memory` mode):** Embeds task chunks using `text-embedding-004` and stores them via Qdrant's local memory client for fast semantic search.
+3. **RAG Service (Qdrant `memory` mode):** Embeds task chunks using `gemini-embedding-2` (size 3072) and stores them via Qdrant's local memory client for fast semantic search.
 
 ## Setup Instructions
 
@@ -37,6 +37,12 @@ A FastAPI backend service powered by Gemini 2.5 Flash and Qdrant. It generates p
 - **Async I/O:** Qdrant's synchronous python bindings for `:memory:` mode are wrapped in `asyncio.to_thread()` to prevent blocking the FastAPI event loop during upserts and retrieval.
 - **Session ID Silent Reset:** An unrecognized `session_id` provided to `/chat` is treated as the start of a new session rather than an error, trading strict detectability for resilience. A client restart shouldn't be blocked by a 404.
 - **Goal Title Validation:** Empty or whitespace-only goal strings are rejected at the Pydantic layer (`min_length=1`) to prevent sending nonsensical prompts to the LLM.
+
+## Prompt Design Decisions
+
+1. **System Instructions over Prompt Stuffing:** For generating roadmaps and projects, the complex rules (like avoiding hallucinations and keeping JSON structured) are fed as System Instructions, keeping the user-input prompt clean and focused purely on their parameters (goal, skills, hours).
+2. **Context-Grounded Prompts (RAG):** For the Chat endpoint, the prompt explicitly injects the retrieved roadmap chunks as `Context:` and adds strict instructions to *"Only use the context provided. If the answer is not in the context, say 'No relevant section of your roadmap matched that question.'"* This prevents the LLM from hallucinating knowledge outside the generated roadmap.
+3. **Structured Output Enforcement:** Instead of using prompt engineering to say "Respond in JSON format like...", we natively bind Pydantic schemas directly into the `google-genai` SDK (`response_schema`), forcing the API to guarantee the output format.
 
 ## AI Tools Used
 Used an AI assistant to iteratively pressure-test the design against likely reviewer questions across multiple rounds. All architectural decisions — chunking strategy, retry mechanism, async approach, dual-input validation, and threshold calibration — were reasoned through with that process and implemented manually.
