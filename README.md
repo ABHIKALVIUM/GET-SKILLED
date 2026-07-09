@@ -3,6 +3,14 @@
 ## Overview
 A FastAPI backend service powered by Gemini 2.5 Flash and Qdrant. It generates personalized learning roadmaps, recommends capstone projects, and provides a conversational RAG interface over the generated roadmap chunks.
 
+## Live Demo
+
+> **Interactive API Docs:** [https://get-skilled.onrender.com/docs](https://get-skilled.onrender.com/docs)
+>
+> ⚠️ Hosted on Render free tier — the server may take ~30 seconds to wake up on first request (cold start). Once awake, all endpoints respond normally.
+>
+> ⚠️ Qdrant runs in `:memory:` mode. Call `POST /roadmap` first to generate a roadmap ID, then use that ID for `/project` and `/chat` in the same session.
+
 ## Architecture
 
 1. **API Layer (FastAPI):** Handles input validation using Pydantic (including complex `model_validator` edge cases for dual-input paths).
@@ -53,3 +61,16 @@ Run tests using:
 ```bash
 pytest tests/
 ```
+
+## Deploying to Render
+
+1. Push this repository to GitHub.
+2. Go to [render.com](https://render.com) and create a free account.
+3. Click **New → Web Service** and connect your GitHub repository.
+4. Configure the service:
+   - **Environment:** `Python 3`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port 10000`
+5. Under **Environment Variables**, add:
+   - `GEMINI_API_KEY` → your Gemini API key
+6. Click **Deploy**. Once live, your Swagger UI will be at `https://your-app.onrender.com/docs`.
